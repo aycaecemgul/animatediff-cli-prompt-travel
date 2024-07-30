@@ -6,7 +6,6 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Optional
-import uuid
 
 import torch
 import typer
@@ -259,10 +258,8 @@ def create_config(
 
     model_config: ModelConfig = get_model_config(config_org)
 
-    # get a timestamp for the output directory
-    time_str = uuid.uuid4()
     # make the output directory
-    save_dir = out_dir.joinpath(f"{time_str}-{model_config.save_name}")
+    save_dir = out_dir.joinpath(f"{model_config.save_name}")
     save_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Will save outputs to ./{path_from_cwd(save_dir)}")
 
