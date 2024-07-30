@@ -6,6 +6,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Optional
+import uuid
 
 import torch
 import typer
@@ -223,9 +224,20 @@ def create_config(
             help="gradual latent hires fix",
         ),
     ] = False,
+    no_generate_tag: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--no-tag",
+            "-nt",
+            path_type=Path,
+            is_flag=False,
+            help="prompt tagger",
+        )
+    ] = True
 ):
     """Create a config file for video stylization"""
     is_danbooru_format = not is_no_danbooru_format
+    generate_tag = not no_generate_tag
     with_confidence = not without_confidence
     logger.info(f"{org_movie=}")
     logger.info(f"{config_org=}")
@@ -248,7 +260,7 @@ def create_config(
     model_config: ModelConfig = get_model_config(config_org)
 
     # get a timestamp for the output directory
-    time_str = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+    time_str = uuid.uuid4()
     # make the output directory
     save_dir = out_dir.joinpath(f"{time_str}-{model_config.save_name}")
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -272,17 +284,19 @@ def create_config(
         with open(ignore_list) as f:
             black_list = [s.strip() for s in f.readlines()]
 
-    model_config.prompt_map = get_labels(
-        frame_dir=img2img_dir,
-        interval=predicte_interval,
-        general_threshold=general_threshold,
-        character_threshold=character_threshold,
-        ignore_tokens=black_list,
-        with_confidence=with_confidence,
-        is_danbooru_format=is_danbooru_format,
-        is_cpu = False,
-    )
-
+    if generate_tag:
+        model_config.prompt_map = get_labels(
+            frame_dir=img2img_dir,
+            interval=predicte_interval,
+            general_threshold=general_threshold,
+            character_threshold=character_threshold,
+            ignore_tokens=black_list,
+            with_confidence=with_confidence,
+            is_danbooru_format=is_danbooru_format,
+            is_cpu=False,
+        )
+    else:
+        model_config.prompt_map = {"0": ""}
 
     model_config.head_prompt = ""
     model_config.tail_prompt = ""
@@ -309,7 +323,7 @@ def create_config(
 
 
     model_config.controlnet_map["controlnet_ip2p"] = {
-      "enable": True,
+      "enable": False,
       "use_preprocessor":True,
       "guess_mode":False,
       "controlnet_conditioning_scale": 0.5,
@@ -332,7 +346,7 @@ def create_config(
         "input_image_dir": os.path.relpath(ip_adapter_dir.absolute(), data_dir),
         "prompt_fixed_ratio": 0.5,
         "save_input_image": True,
-        "resized_to_square": False,
+        "resized_to_square": True,
         "scale": 0.5,
         "is_full_face": False,
         "is_plus_face": False,
@@ -457,7 +471,7 @@ def create_config(
         model_config.stylize_config.pop("1")
 
 
-    save_config_path = save_dir.joinpath("prompt.json")
+    save_config_path = save_dir.joinpath(f"{model_config.save_name}_prompt.json")
     save_config_path.write_text(model_config.json(indent=4), encoding="utf-8")
 
     logger.info(f"config = { save_config_path }")
