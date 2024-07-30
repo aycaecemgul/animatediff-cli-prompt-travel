@@ -224,15 +224,14 @@ def create_config(
         ),
     ] = False,
     no_generate_tag: Annotated[
-        Optional[Path],
+        bool,
         typer.Option(
             "--no-tag",
             "-nt",
-            path_type=Path,
             is_flag=False,
             help="prompt tagger",
         )
-    ] = True
+    ] = True,
 ):
     """Create a config file for video stylization"""
     is_danbooru_format = not is_no_danbooru_format
@@ -259,7 +258,9 @@ def create_config(
     model_config: ModelConfig = get_model_config(config_org)
 
     # make the output directory
-    save_dir = out_dir.joinpath(f"{model_config.save_name}")
+    video_name = org_movie.split("/")[-1].split(".")[0]
+    time_str = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+    save_dir = out_dir.joinpath(f"{video_name}_{model_config.save_name}_{time_str}")
     save_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Will save outputs to ./{path_from_cwd(save_dir)}")
 
