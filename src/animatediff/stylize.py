@@ -223,7 +223,7 @@ def create_config(
             help="gradual latent hires fix",
         ),
     ] = False,
-    no_generate_tag: Annotated[
+    generate_tag: Annotated[
         bool,
         typer.Option(
             "--no-tag",
@@ -235,7 +235,7 @@ def create_config(
 ):
     """Create a config file for video stylization"""
     is_danbooru_format = not is_no_danbooru_format
-    generate_tag = not no_generate_tag
+    generate_tag = not generate_tag
     with_confidence = not without_confidence
     logger.info(f"{org_movie=}")
     logger.info(f"{config_org=}")
@@ -258,7 +258,7 @@ def create_config(
     model_config: ModelConfig = get_model_config(config_org)
 
     # make the output directory
-    video_name = org_movie.split("/")[-1].split(".")[0]
+    video_name = org_movie.stem
     time_str = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     save_dir = out_dir.joinpath(f"{video_name}_{model_config.save_name}_{time_str}")
     save_dir.mkdir(parents=True, exist_ok=True)
